@@ -9,6 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 
+import com.example.microservices.product_service.dto.*;
+import com.example.microservices.product_service.service.ProductService;
+
 @Service
 @Slf4j
 public class ProductConsumer {
@@ -60,7 +63,19 @@ public class ProductConsumer {
 
         try {
             orderDto = objectMapper.readValue(orderMessage, OrderMessage.class);
-            log.info("Deserialized Cancelled Order: {}", order)
+            log.info("Deserialized Cancelled Order: {}", orderDto);
+
+            List<OrderItemDto> orderItems = orderDto.getOrderItems();
+            if(orderItems != null){
+                for (OrderItemDto item : orderItems) {
+                    String skuCode = item.getSkuCode();
+                    int quantity = item.getQuantity();
+                    productService.increaseProductQuantity(skuCode, qunatity);
+                }
+            }
+        } catch (JsonProcessingException e) {
+            log.error("Failed to deserialize order cancellation message", e);
+            throw new RuntimeException("Failed to deserialize order canecllation message", e);
         }
     }
 }
